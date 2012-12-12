@@ -26,6 +26,7 @@ set(headers
   ArrayHandle.h
   ArrayHandleConstantValue.h
   ArrayHandleCounting.h
+  ArrayHandlePermutation.h
   ArrayPortal.h
   ArrayPortalFromIterators.h
   Assert.h

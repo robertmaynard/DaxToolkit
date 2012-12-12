@@ -23,6 +23,7 @@ set(unit_tests
   UnitTestArrayHandle.cxx
   UnitTestArrayHandleConstantValue.cxx
   UnitTestArrayHandleCounting.cxx
+  UnitTestArrayHandlePermutation.cxx
   UnitTestArrayPortalFromIterators.cxx
   UnitTestDeviceAdapterAlgorithmDependency.cxx
   UnitTestDeviceAdapterSerial.cxx
