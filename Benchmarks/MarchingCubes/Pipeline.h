@@ -18,14 +18,14 @@
 
 #include <dax/cont/ArrayHandle.h>
 #include <dax/cont/Scheduler.h>
-#include <dax/cont/GenerateInterpolatedCells.h>
+#include <dax/cont/GenerateKeysValues.h>
 #include <dax/cont/Timer.h>
 #include <dax/cont/UniformGrid.h>
 #include <dax/cont/UnstructuredGrid.h>
 #include <dax/cont/VectorOperations.h>
 
 #include <dax/worklet/Magnitude.h>
-#include <dax/worklet/MarchingCubes.h>
+#include <dax/worklet/MarchingCubesMapReduce.h>
 
 #include <iostream>
 #include <vector>
@@ -55,42 +55,45 @@ void RunDAXPipeline(const dax::cont::UniformGrid<> &grid, int pipeline)
 
   dax::cont::ArrayHandle<dax::Scalar> intermediate1;
   dax::cont::Scheduler<> schedule;
+
   schedule.Invoke(dax::worklet::Magnitude(),
-        grid.GetPointCoordinates(),
-        intermediate1);
+                  grid.GetPointCoordinates(),
+                  intermediate1);
 
   dax::cont::Timer<> timer;
 
   //schedule marching cubes worklet generate step
-  typedef dax::cont::GenerateInterpolatedCells<dax::worklet::MarchingCubesGenerate> GenerateIC;
-  typedef GenerateIC::ClassifyResultType  ClassifyResultType;
+  typedef dax::cont::GenerateKeysValues<dax::worklet::MarchingCubesGenerate> GenerateKV;
+  typedef GenerateKV::OutputCountType  OutputCountType;
+
+  typedef dax::cont::ReduceKeysValues< dax::worklet::MarchingCubesInterpolate,
+                             dax::cont::ArrayHandle<dax::Id2> > ReduceKV;
 
   dax::worklet::MarchingCubesClassify classifyWorklet(ISOVALUE);
   dax::worklet::MarchingCubesGenerate generateWorklet(ISOVALUE);
 
 
   //run the first step
-  ClassifyResultType classification; //array handle for the first step classification
-  schedule.Invoke(classifyWorklet, grid,
-                   intermediate1, classification);
+  OutputCountType keyCountsPerCell;
+  schedule.Invoke(classifyWorklet, grid, intermediate1, keyCountsPerCell);
 
-  //construct the topology generation worklet
-  GenerateIC generate(classification,generateWorklet);
-
-  generate.SetRemoveDuplicatePoints(
-                pipeline == dax::testing::ArgumentsParser::MARCHING_CUBES_REMOVE_DUPLICATES);
+  //construct the mapping of key->value where key is two edge ids
+  //that construct the new point and the value is the weight
+  dax::cont::ArrayHandle<dax::Id2> keyHandle;
+  dax::cont::ArrayHandle<dax::Scalar> valueHandle;
+  GenerateKV generate(keyCountsPerCell,generateWorklet);
 
   //run the second step
   schedule.Invoke(generate,
-                   grid, outGrid, intermediate1);
+                   grid, intermediate1, keyHandle, valueHandle);
+
+
+  dax::cont::ArrayHandle<dax::Scalar> reducedValues;
+  schedule.Invoke(ReduceKV(keyHandle), valueHandle, reducedValues);
 
   double time = timer.GetElapsedTime();
 
-  std::cout << "number of coordinates in: " << grid.GetNumberOfPoints() << std::endl;
-  std::cout << "number of coordinates out: " << outGrid.GetNumberOfPoints() << std::endl;
-  std::cout << "number of cells out: " << outGrid.GetNumberOfCells() << std::endl;
   PrintResults(1, time);
-
 }
 
 
