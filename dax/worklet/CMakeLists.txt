@@ -24,6 +24,7 @@ set(worklets
   Elevation.h
   Magnitude.h
   MarchingCubes.h
+  MarchingCubesMapReduce.h
   PointDataToCellData.h
   Sine.h
   Slice.h
