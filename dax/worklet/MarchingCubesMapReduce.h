@@ -14,8 +14,8 @@
 //
 //=============================================================================
 
-#ifndef __MarchingCubes_worklet_
-#define __MarchingCubes_worklet_
+#ifndef __MarchingCubes_map_reduce_worklet_
+#define __MarchingCubes_map_reduce_worklet_
 
 #include <dax/CellTag.h>
 #include <dax/CellTraits.h>

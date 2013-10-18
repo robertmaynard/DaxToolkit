@@ -14,9 +14,6 @@
 //
 //=============================================================================
 
-#define DAX_ARRAY_CONTAINER_CONTROL DAX_ARRAY_CONTAINER_CONTROL_ERROR
-#define DAX_DEVICE_ADAPTER DAX_DEVICE_ADAPTER_ERROR
-
 #include <dax/cont/testing/TestingGridGenerator.h>
 #include <dax/cont/testing/Testing.h>
 
@@ -33,7 +30,6 @@
 
 #include <dax/cont/ArrayContainerControlBasic.h>
 #include <dax/cont/ArrayHandle.h>
-#include <dax/cont/DeviceAdapterSerial.h>
 #include <dax/cont/GenerateKeysValues.h>
 #include <dax/cont/ReduceKeysValues.h>
 #include <dax/cont/Scheduler.h>
@@ -53,7 +49,7 @@ const dax::Id ISOVALUE = 70;
 struct TestMarchingCubesMapReduceWorklet
 {
   typedef dax::cont::ArrayContainerControlTagBasic ArrayContainer;
-  typedef dax::cont::DeviceAdapterTagSerial DeviceAdapter;
+  typedef DAX_DEFAULT_DEVICE_ADAPTER_TAG DeviceAdapter;
 
   typedef dax::CellTagTriangle CellType;
 
@@ -139,15 +135,12 @@ struct TestMarchingCubesMapReduceWorklet
     }
 };
 
-
 //-----------------------------------------------------------------------------
 void TestMarchingCubesMapReduce()
   {
   dax::cont::testing::GridTesting::TryAllGridTypes(
         TestMarchingCubesMapReduceWorklet(),
-        dax::testing::Testing::CellCheckHexahedron(),
-        dax::cont::ArrayContainerControlTagBasic(),
-        dax::cont::DeviceAdapterTagSerial());
+        dax::testing::Testing::CellCheckHexahedron());
   }
 } // Anonymous namespace
 
