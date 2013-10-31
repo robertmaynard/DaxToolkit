@@ -174,6 +174,14 @@ struct ParametricCoordinates<dax::CellTagVertex>
   }
 };
 
+template<>
+struct ParametricCoordinates<dax::CellTagSphere>
+{
+    DAX_EXEC_EXPORT static dax::Vector3 Center() {
+        return dax::make_Vector3(0.0, 0.0, 0.0);
+    }
+};
+
 //-----------------------------------------------------------------------------
 template<class CellTag>
 DAX_EXEC_EXPORT
@@ -217,6 +225,19 @@ DAX_EXEC_EXPORT dax::Vector3 WorldCoordinatesToParametricCoordinates(
 
 // TODO: Special versions of parametric to world and vice versa for voxels
 // that requires only origin and spacing.
+
+// sphere... temporary for locator benchmarking
+template<>
+DAX_EXEC_EXPORT
+dax::Vector3 ParametricCoordinatesToWorldCoordinates(
+    const dax::exec::CellField<dax::Vector3,dax::CellTagSphere> &sphere,
+    const dax::Vector3 &parametricCoords,
+    dax::CellTagSphere)
+{
+    dax::Scalar radius = sphere[1][0];
+    dax::Vector3 center = sphere[0];
+    return center + radius * parametricCoords;
+}
 
 //-----------------------------------------------------------------------------
 namespace detail {

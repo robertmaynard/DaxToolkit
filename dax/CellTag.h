@@ -35,6 +35,7 @@ struct CellTagTriangle { };
 struct CellTagVertex { };
 struct CellTagVoxel { };
 struct CellTagWedge { };
+struct CellTagSphere { };
 
 } // namespace dax
 

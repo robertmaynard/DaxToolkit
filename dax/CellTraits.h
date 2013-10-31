@@ -144,6 +144,14 @@ template<> struct CellTraits<dax::CellTagWedge> {
   typedef dax::CellTagWedge CanonicalCellTag;
 };
 
+template<> struct CellTraits<dax::CellTagSphere> {
+  const static int NUM_VERTICES = 2;
+  const static int TOPOLOGICAL_DIMENSIONS = 3;
+  typedef dax::CellTopologicalDimensionsTag<3> TopologicalDimensionsTag;
+  typedef dax::GridTagUnstructured GridTag;
+  typedef dax::CellTagSphere CanonicalCellTag;
+};
+
 } // namespace dax
 
 #endif //__dax_CellTraits_h
