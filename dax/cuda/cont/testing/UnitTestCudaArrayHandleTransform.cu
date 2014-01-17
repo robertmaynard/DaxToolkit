@@ -26,6 +26,8 @@
 
 #include <dax/cuda/cont/internal/testing/Testing.h>
 
+#include <vector>
+
 namespace ut_transform {
 
 const dax::Id ARRAY_SIZE = 10;
@@ -84,6 +86,7 @@ struct TransformTests
 
     DAX_TEST_ASSERT(ARRAY_SIZE == result.GetNumberOfValues(),
                     "result handle doesn't have the correct size");
+
     //verify that the control portal works
     for(int i=0; i < ARRAY_SIZE; ++i)
       {
@@ -91,7 +94,19 @@ struct TransformTests
       const ValueType correct_value = MySquare<ValueType>()(i);
       DAX_TEST_ASSERT(v == correct_value,
                       "Transform Handle with MySquare Failed");
+      // const ValueType v2 = countingTransformed.GetPortalConstControl().Get(i);
+      // DAX_TEST_ASSERT(v2 == correct_value,
+      //                 "Transform Handle with MySquare Failed");
       }
+
+    //verify that CopyInto works:
+    std::vector<ValueType> transform_data(result.GetNumberOfValues());
+    counting.PrepareForInput();
+    countingTransformed.PrepareForInput();
+    countingTransformed.GetPortalConstControl().Get(0);
+    // std::copy()
+    // countingTransformed.CopyInto(transform_data.begin());
+
     }
 
     {

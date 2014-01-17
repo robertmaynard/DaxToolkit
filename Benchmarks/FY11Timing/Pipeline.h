@@ -36,18 +36,34 @@
 #define MAKE_STRING1(x) MAKE_STRING2(x)
 #define DEVICE_ADAPTER MAKE_STRING1(DAX_DEFAULT_DEVICE_ADAPTER_TAG)
 
-namespace worklets
+namespace functors
 {
-struct MagWrapper
+struct Mag
 {
-  //dax::worklet::Magnitude isn't a unary function, so
-  //we have to wrap it
-  DAX_EXEC_EXPORT
+  DAX_EXEC_CONT_EXPORT
   dax::Scalar operator()(dax::Vector3 inValue) const
   {
-    dax::Scalar result;
-    dax::worklet::Magnitude()(inValue,result);
-    return result;
+    return dax::math::Magnitude(inValue);
+  }
+};
+
+struct Sine
+{
+  template<class ValueType>
+  DAX_EXEC_CONT_EXPORT
+  ValueType operator()(const ValueType &inValue) const
+  {
+    return dax::math::Sin(inValue);
+  }
+};
+
+struct Square
+{
+  template<class ValueType>
+  DAX_EXEC_CONT_EXPORT
+  ValueType operator()(const ValueType &inValue) const
+  {
+    return inValue * inValue;
   }
 };
 
@@ -229,15 +245,15 @@ void RunPipeline4(const dax::cont::UniformGrid<> &grid)
   //explicitly calling each of them, only the cosine worklet will be called
   typedef dax::cont::ArrayHandleTransform< dax::Scalar,
           dax::cont::UniformGrid<>::PointCoordinatesType,
-          ::worklets::MagWrapper > MagnitudeHandle;
+          ::functors::Mag > MagnitudeHandle;
 
   typedef dax::cont::ArrayHandleTransform< dax::Scalar,
           MagnitudeHandle,
-          dax::worklet::Sine > SineFusedHandle;
+          ::functors::Sine > SineFusedHandle;
 
   typedef dax::cont::ArrayHandleTransform< dax::Scalar,
           SineFusedHandle,
-          dax::worklet::Square > SquareFusedHandle;
+          ::functors::Square > SquareFusedHandle;
 
   MagnitudeHandle mag(grid.GetPointCoordinates());
 

@@ -25,11 +25,69 @@ namespace dax {
 namespace cont {
 namespace internal {
 
-/// \brief An implicit array portal that returns an counting value.
+
+//simple container for the array handle and functor
+//so we can get them inside the array transfer class
+template< class T, class ArrayHandleType, class FunctorType>
+struct ArrayPortalConstTransform
+{
+  typedef T ValueType;
+  typedef typename ArrayHandleType::PortalConstControl PortalType;
+
+  DAX_CONT_EXPORT
+  ArrayPortalConstTransform():
+  Handle(),
+  Portal(),
+  Functor()
+  { }
+
+  DAX_CONT_EXPORT
+  ArrayPortalConstTransform(ArrayHandleType handle, FunctorType f):
+  Handle(handle),
+  Portal(handle.GetPortalConstControl()),
+  Functor(f)
+  { }
+
+  DAX_CONT_EXPORT
+  dax::Id GetNumberOfValues() const {
+    return this->Handle.GetNumberOfValues();
+  }
+
+  DAX_CONT_EXPORT
+  ValueType Get(dax::Id index) const {
+    // ArrayHandleType& a = 'a';
+    // PortalType portal = this->Handle.GetPortalConstControl();
+
+    return this->Functor(1);
+  }
+
+
+  typedef dax::cont::internal::IteratorFromArrayPortal<
+      ArrayPortalConstTransform <
+                    T, ArrayHandleType, FunctorType> > IteratorType;
+
+  DAX_CONT_EXPORT
+  IteratorType GetIteratorBegin() const
+  {
+    return IteratorType(*this);
+  }
+
+  DAX_CONT_EXPORT
+  IteratorType GetIteratorEnd() const
+  {
+    return IteratorType(*this, this->GetNumberOfValues());
+  }
+
+
+  ArrayHandleType Handle;
+  PortalType Portal;
+  FunctorType Functor;
+};
+
 template <class ValueType_,
           class PortalType_,
           class FunctorType_>
-class ArrayPortalTransform
+class ArrayPortalExecTransform
 {
 public:
   typedef PortalType_ PortalType;
@@ -37,43 +95,43 @@ public:
   typedef FunctorType_ FunctorType;
 
   DAX_CONT_EXPORT
-  ArrayPortalTransform() :
+  ArrayPortalExecTransform() :
   Portal(),
   NumberOfValues(0),
   Functor()
   {  }
 
   DAX_CONT_EXPORT
-  ArrayPortalTransform(const PortalType& portal, dax::Id size, FunctorType f ) :
+  ArrayPortalExecTransform(const PortalType& portal, dax::Id size, FunctorType f ) :
   Portal(portal),
   NumberOfValues(size),
   Functor(f)
   {  }
 
-  /// Copy constructor for any other ArrayPortalTransform with an iterator
+  /// Copy constructor for any other ArrayPortalExecTransform with an iterator
   /// type that can be copied to this iterator type. This allows us to do any
   /// type casting that the iterators do (like the non-const to const cast).
   ///
   template<class OtherV, class OtherP, class OtherF>
   DAX_CONT_EXPORT
-  ArrayPortalTransform(const ArrayPortalTransform<OtherV,OtherP,OtherF> &src)
+  ArrayPortalExecTransform(const ArrayPortalExecTransform<OtherV,OtherP,OtherF> &src)
     : Portal(src.GetPortal()),
       NumberOfValues(src.GetNumberOfValues()),
       Functor(src.GetFunctor())
 
   {  }
 
-  DAX_EXEC_EXPORT
+  DAX_EXEC_CONT_EXPORT
   dax::Id GetNumberOfValues() const {
     return this->NumberOfValues;
   }
 
-  DAX_EXEC_EXPORT
+  DAX_EXEC_CONT_EXPORT
   ValueType Get(dax::Id index) const{
     return this->Functor(this->Portal.Get(index));
   }
 
-  typedef dax::cont::internal::IteratorFromArrayPortal< ArrayPortalTransform <
+  typedef dax::cont::internal::IteratorFromArrayPortal< ArrayPortalExecTransform <
                     ValueType, PortalType, FunctorType> > IteratorType;
 
   DAX_EXEC_EXPORT
@@ -104,33 +162,6 @@ private:
   FunctorType Functor;
 };
 
-//simple container for the array handle and functor
-//so we can get them inside the array transfer class
-template< class ArrayHandleType, class FunctorType>
-struct ArrayPortalConstTransform
-{
-  DAX_CONT_EXPORT
-  ArrayPortalConstTransform():
-  Handle(),
-  Functor()
-  { }
-
-  DAX_CONT_EXPORT
-  ArrayPortalConstTransform(ArrayHandleType handle, FunctorType f):
-  Handle(handle),
-  Functor(f)
-  { }
-
-  DAX_CONT_EXPORT
-  dax::Id GetNumberOfValues() const {
-    return this->Handle.GetNumberOfValues();
-  }
-
-  ArrayHandleType Handle;
-  FunctorType Functor;
-};
-
-
 
 template<class ValueType, class HandleType, class FunctorType>
 struct ArrayContainerControlTagTransform { };
@@ -158,7 +189,7 @@ class ArrayContainerControl<
 public:
 
   typedef T ValueType;
-  typedef ArrayPortalConstTransform<ArrayHandleType,FunctorType> PortalType;
+  typedef ArrayPortalConstTransform<T,ArrayHandleType,FunctorType> PortalType;
   typedef PortalType PortalConstType;
 
 public:
@@ -231,11 +262,11 @@ public:
   typedef typename ContainerType::PortalType PortalControl;
   typedef typename ContainerType::PortalConstType PortalConstControl;
 
-  typedef ArrayPortalTransform< ValueType,
+  typedef ArrayPortalExecTransform< ValueType,
                   typename ArrayHandleType::PortalExecution,
                   FunctorType> PortalExecution;
 
-  typedef ArrayPortalTransform< ValueType,
+  typedef ArrayPortalExecTransform< ValueType,
                   typename ArrayHandleType::PortalConstExecution,
                   FunctorType> PortalConstExecution;
 
@@ -244,7 +275,8 @@ public:
   ArrayTransfer() :
     PortalValid(false),
     NumberOfValues(0),
-    Portal()
+    Portal(),
+    InputPortal()
   {
   }
 
@@ -255,9 +287,11 @@ public:
 
   DAX_CONT_EXPORT void LoadDataForInput(PortalConstControl portal)
   {
+    this->InputPortal = portal;
+
     typename ArrayHandleType::PortalConstExecution tmpInput =
-                           portal.Handle.PrepareForInput();
-    this->NumberOfValues = portal.Handle.GetNumberOfValues();
+                         this->InputPortal.Handle.PrepareForInput();
+    this->NumberOfValues = this->InputPortal.Handle.GetNumberOfValues();
 
     this->Portal = PortalConstExecution( tmpInput,
                                          this->NumberOfValues,
@@ -289,9 +323,12 @@ public:
   DAX_CONT_EXPORT void CopyInto(IteratorTypeControl dest) const
   {
     DAX_ASSERT_CONT(this->PortalValid);
-    std::copy(this->Portal.GetIteratorBegin(),
-              this->Portal.GetIteratorEnd(),
-              dest);
+    //synchronize the input portal to have the latest values
+    // this->InputPortal.Handle.PrepareForInput();
+    (void)dest;
+    // std::copy(this->InputPortal.GetIteratorBegin(),
+    //           this->InputPortal.GetIteratorEnd(),
+    //           dest);
   }
 
   DAX_CONT_EXPORT void Shrink(dax::Id daxNotUsed(numberOfValues))
@@ -316,6 +353,8 @@ private:
   bool PortalValid;
   dax::Id NumberOfValues;
   PortalConstExecution Portal;
+
+  PortalConstControl InputPortal;
 
 };
 
