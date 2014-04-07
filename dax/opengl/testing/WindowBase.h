@@ -85,12 +85,14 @@ public:
     {
     std::cerr << glGetString(GL_RENDERER) << std::endl;
     std::cerr << glGetString(GL_VERSION) << std::endl;
+    std::cerr << "Unable to create an OpenGL 2.1 Context" << std::endl;
     throw dax::cont::ErrorControlBadValue(
                                   "Unable to create an OpenGL 2.1 Context");
     }
 
 #ifdef DAX_CUDA
     int id = dax::cuda::cont::FindFastestDeviceId();
+    std::cout << "setting cuda device too " << id << std::endl;
     dax::cuda::opengl::SetCudaGLDevice(id);
 #endif
 
