@@ -64,6 +64,10 @@ struct BindTopoGrids
   void operator()(const GridType&) const
     {
     dax::cont::testing::TestGrid<GridType> grid(4);
+
+    typedef typename GridType::CellTag CellTag;
+    //todo change this to only support grid out
+
     verifyBindingExists<GridType,GridType>( grid.GetRealGrid(), grid.GetRealGrid() );
     verifyConstBindingExists<GridType,GridType>( grid.GetRealGrid(), grid.GetRealGrid() );
     }
