@@ -207,9 +207,13 @@ private:
   DAX_CONT_EXPORT void FillPointMask(const InGridType &inGrid,
                                      const OutGridType &outGrid)
   {
+    typedef dax::cont::DeviceAdapterAlgorithm<DeviceAdapterTag>
+        Algorithm;
+
     // Clear out the mask, have to allocate the size first
     // so that  works properly
-    this->PointMask.PrepareForOutput(inGrid.GetNumberOfPoints());
+    const dax::Id pointMaskSize = inGrid.GetNumberOfPoints();
+    this->PointMask.PrepareForOutput( pointMaskSize );
 
     dax::cont::DispatcherMapField<
       dax::exec::internal::kernel::ClearUsedPointsFunctor > clearPtsDispatcher;
@@ -217,13 +221,16 @@ private:
 
     // Mark every point that is used at least once.
     // This only works when outGrid is an UnstructuredGrid.
-    dax::cont::DispatcherMapField<
-      dax::exec::internal::kernel::GetUsedPointsFunctor > usedPtsDispatcher;
-    usedPtsDispatcher.Invoke(
-                     dax::cont::make_Permutation(outGrid.GetCellConnections(),
-                     this->PointMask,
-                     inGrid.GetNumberOfPoints())
-                     );
+    typedef dax::exec::internal::kernel::GetUsedPointsFunctor<
+        typename OutGridType::CellConnectionsType::PortalConstExecution,
+        typename PointMaskType::PortalExecution > UsedPointsFunctorType;
+
+    UsedPointsFunctorType usedPts(
+                            outGrid.GetCellConnections().PrepareForInput(),
+                            this->PointMask.PrepareForOutput( pointMaskSize )
+                            );
+
+    Algorithm::Schedule( usedPts, outGrid.GetCellConnections().GetNumberOfValues() );
   }
 
   template<typename InGridType,typename OutGridType>

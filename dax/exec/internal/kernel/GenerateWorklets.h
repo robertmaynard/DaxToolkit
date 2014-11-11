@@ -50,16 +50,30 @@ struct Index : public WorkletMapField
   }
 };
 
-struct GetUsedPointsFunctor : public WorkletMapField
+template<class InPortalType,
+         class OutPortalType >
+struct GetUsedPointsFunctor
 {
-  typedef void ControlSignature(FieldOut);
-  typedef void ExecutionSignature(_1);
+  InPortalType  InputPortal;
+  OutPortalType OutputPortal;
 
-  template<typename T>
-  DAX_EXEC_EXPORT void operator()(T& t) const
+  DAX_CONT_EXPORT GetUsedPointsFunctor(const InPortalType &inPortal,
+                                       const OutPortalType &outPortal):
+    InputPortal( inPortal ),
+    OutputPortal( outPortal )
   {
-    t = static_cast<T>(1);
+
   }
+
+  DAX_EXEC_EXPORT void operator()(dax::Id index) const
+  {
+    //every value in input portal is an index in output portal
+    //that we want to mark as true/1
+    this->OutputPortal.Set( InputPortal.Get(index), 1 );
+  }
+
+  DAX_CONT_EXPORT void SetErrorMessageBuffer(
+        const dax::exec::internal::ErrorMessageBuffer &) {  }
 };
 
 template<class InPortalType,

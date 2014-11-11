@@ -21,7 +21,7 @@
 #include <dax/cuda/cont/internal/DeviceAdapterTagCuda.h>
 
 #include <dax/cont/internal/ArrayManagerExecution.h>
-#include <dax/thrust/cont/internal/ArrayManagerExecutionThrustDevice.h>
+#include <dax/cuda/cont/internal/ArrayManagerExecutionThrustDevice.h>
 
 // These must be placed in the dax::cont::internal namespace so that
 // the template can be found.
@@ -33,11 +33,11 @@ namespace internal {
 template <typename T, class ArrayContainerTag>
 class ArrayManagerExecution
     <T, ArrayContainerTag, dax::cuda::cont::DeviceAdapterTagCuda>
-    : public dax::thrust::cont::internal::ArrayManagerExecutionThrustDevice
+    : public dax::cuda::cont::internal::ArrayManagerExecutionThrustDevice
         <T, ArrayContainerTag>
 {
 public:
-  typedef dax::thrust::cont::internal::ArrayManagerExecutionThrustDevice
+  typedef dax::cuda::cont::internal::ArrayManagerExecutionThrustDevice
       <T, ArrayContainerTag> Superclass;
   typedef typename Superclass::ValueType ValueType;
   typedef typename Superclass::PortalType PortalType;

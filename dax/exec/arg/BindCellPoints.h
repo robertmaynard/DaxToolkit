@@ -59,7 +59,46 @@ public:
       typename dax::cont::internal::Bindings<Invocation>::type &bindings):
     TopoExecArg(dax::exec::arg::GetNthExecArg<TopoIndex>(bindings)),
     ExecArg(dax::exec::arg::GetNthExecArg<N>(bindings)),
-    Value(typename dax::VectorTraits<ValueType>::ComponentType()) {}
+    Value(typename dax::VectorTraits<ValueType>::ComponentType())
+    {
+      //now that we have the ExecArg and TopoExecArgs, we should tell them
+      //that the access patterns will be random access, this way if
+      //the backend can map it to texture memory etc. Hmm this
+      //might have to happen at ArgBaseTraits construction time
+
+      //How does the FieldArrayHandle know that we are a cell worklet
+      //and are binding a point field. Can The dispatcher help out here?
+      //If we can just tell FieldArrayHandle that it is going to be
+      //used for random access it would use a const random access portal
+      //maybe something like:
+      /*
+
+      typedef typename ::boost::mpl::if_<typename Tags::template Has<dax::cont::sig::In>,
+                                   ::boost::true_type,
+                                   ::boost::false_type>::type HasInTag;
+
+      typedef typename ::boost::mpl::if_<typename Tags::template Has<dax::cont::sig::Point>,
+                                   ::boost::true_type,
+                                   ::boost::false_type>::type HasPointTag;
+
+      typedef typename ::boost::mpl::and_< typename HasPointTag::type,
+                                           typename HasInTag::type >::type HasInPointTag;
+
+      typedef typename boost::mpl::if_<
+              typename Tags::template Has<dax::cont::sig::Out>,
+              typename HandleType::PortalExecution,
+              typename HandleType::PortalConstExecution>::type  FallBackPortalType;
+
+      typedef typename boost::mpl::if_< typename HasInPointTag::type
+                       typename HandleType::PortalConstRandomAccessExecution,
+                       FallBackPortalType>::type PortalType;
+
+
+      We have the Device adapter inside the FieldHandle so we can specialize
+      the array handle
+      */
+
+    }
 
   template<typename IndexType>
   DAX_EXEC_EXPORT ReturnType GetValueForWriting(const IndexType&,
@@ -136,6 +175,7 @@ public:
 
   typedef dax::exec::CellField<typename ExecArgType::ValueType,
                                typename TopoExecArgType::CellTag> ValueType;
+
   typedef typename boost::mpl::if_<typename HasOutTag::type,
                                    ValueType&,
                                    ValueType const>::type ReturnType;
