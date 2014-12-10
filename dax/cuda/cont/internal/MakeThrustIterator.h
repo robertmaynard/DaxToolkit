@@ -53,6 +53,7 @@ namespace detail {
 // Tags to specify what type of thrust iterator to use.
 struct ThrustIteratorTransformTag {  };
 struct ThrustIteratorDevicePtrTag {  };
+struct ThrustIteratorDeviceTextureTag {  };
 
 // Traits to help classify what thrust iterators will be used.
 template<class IteratorType>
@@ -143,6 +144,14 @@ struct IteratorTraits
 };
 
 template<typename T>
+struct IteratorTraits< dax::cuda::exec::internal::ConstArrayPortalFromTexture< T > >
+{
+  typedef dax::cuda::exec::internal::ConstArrayPortalFromTexture< T > PortalType;
+  typedef ThrustIteratorDeviceTextureTag Tag;
+  typedef typename PortalType::IteratorType IteratorType;
+};
+
+template<typename T>
 DAX_CONT_EXPORT static
 ::thrust::cuda::pointer<T>
 MakeDevicePtr(T *iter)
@@ -173,6 +182,14 @@ typename IteratorTraits<PortalType>::IteratorType
 MakeIteratorBegin(PortalType portal, detail::ThrustIteratorDevicePtrTag)
 {
   return MakeDevicePtr(portal.GetIteratorBegin());
+}
+
+template<class PortalType>
+DAX_CONT_EXPORT static
+typename IteratorTraits<PortalType>::IteratorType
+MakeIteratorBegin(PortalType portal, detail::ThrustIteratorDeviceTextureTag)
+{
+  return portal.GetIteratorBegin();
 }
 
 } // namespace detail
