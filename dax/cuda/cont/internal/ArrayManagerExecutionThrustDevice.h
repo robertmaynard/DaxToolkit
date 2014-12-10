@@ -45,7 +45,7 @@
 #include <dax/cuda/exec/internal/ArrayPortalFromThrust.h>
 #include <dax/cuda/exec/internal/ArrayPortalFromTexture.h>
 
-#if DAX_THRUST_MAJOR_VERSION == 1 && DAX_THRUST_MINOR_VERSION >= 9
+#if DAX_THRUST_MAJOR_VERSION == 1 && DAX_THRUST_MINOR_VERSION >= 7
 # ifndef DAX_USE_TEXTURE_MEM
 #  define DAX_USE_TEXTURE_MEM
 # endif
@@ -232,7 +232,7 @@ public:
       }
 
     //if we have a texture iterator bound use that
-    return PortalConstType(this->InputArrayIterator, this->Array.size() );
+    return PortalConstType(this->InputArrayIterator, this->NumberOfValues );
 #else
     return PortalConstType(this->ArrayBegin, this->ArrayEnd);
 #endif

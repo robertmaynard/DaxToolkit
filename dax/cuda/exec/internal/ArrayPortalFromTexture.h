@@ -221,11 +221,11 @@ public:
 
     /// Use this iterator to bind \p ptr with a texture reference
     cudaError_t BindTexture(
-        const T         *ptr,               ///< Native pointer to wrap that is aligned to cudaDeviceProp::textureAlignment
+        const ::thrust::system::cuda::pointer<T>  ptr,               ///< Native pointer to wrap that is aligned to cudaDeviceProp::textureAlignment
         size_t          numElements,        ///< Number of elements in the range
         size_t          tex_offset = 0)     ///< Offset (in items) from \p ptr denoting the position of the iterator
     {
-        this->ptr = ptr;
+        this->ptr = ptr.get();
         this->tex_offset = tex_offset;
 
         cudaChannelFormatDesc   channel_desc = cudaCreateChannelDesc<TextureWord>();
@@ -234,7 +234,7 @@ public:
         memset(&res_desc, 0, sizeof(cudaResourceDesc));
         memset(&tex_desc, 0, sizeof(cudaTextureDesc));
         res_desc.resType                = cudaResourceTypeLinear;
-        res_desc.res.linear.devPtr      = (void*)ptr;
+        res_desc.res.linear.devPtr      = (void*)ptr.get();
         res_desc.res.linear.desc        = channel_desc;
         res_desc.res.linear.sizeInBytes = numElements * sizeof(T);
         tex_desc.readMode               = cudaReadModeElementType;
