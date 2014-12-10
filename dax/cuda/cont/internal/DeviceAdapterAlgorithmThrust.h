@@ -405,18 +405,47 @@ private:
     FunctorType Functor;
   };
 
+  // we use cuda pinned memory to reduce the amount of synchronization
+  // and mem copies between the host and device.
+  DAX_CONT_EXPORT
+  static char* GetPinnedErrorArray(dax::Id &arraySize, char** hostPointer)
+    {
+    const dax::Id ERROR_ARRAY_SIZE = 1024;
+    static bool errorArrayInit = false;
+    static char* hostPtr = NULL;
+    static char* devicePtr = NULL;
+    if( !errorArrayInit )
+      {
+      cudaMallocHost( (void**)&hostPtr, ERROR_ARRAY_SIZE, cudaHostAllocMapped );
+      cudaHostGetDevicePointer(&devicePtr, hostPtr, 0);
+      errorArrayInit = true;
+      }
+    //set the size of the array
+    arraySize = ERROR_ARRAY_SIZE;
+
+    //specify the host pointer to the memory
+    *hostPointer = hostPtr;
+    (void) hostPointer;
+    return devicePtr;
+    }
+
+
 public:
   template<class Functor>
   DAX_CONT_EXPORT static void Schedule(Functor functor, dax::Id numInstances)
   {
-    const dax::Id ERROR_ARRAY_SIZE = 1024;
-    ::std::vector<char> hostErrorArray(ERROR_ARRAY_SIZE);
-    hostErrorArray[0]='\0';
-    ::thrust::system::cuda::vector<char> errorArray;
-    errorArray.assign(hostErrorArray.begin(), hostErrorArray.end());
-    dax::exec::internal::ErrorMessageBuffer errorMessage(
-          ::thrust::raw_pointer_cast(&(*errorArray.begin())),
-          errorArray.size());
+    //since the memory is pinned we can access it safely on the host
+    //without a memcpy
+    dax::Id errorArraySize = 0;
+    char* hostErrorPtr = NULL;
+    char* deviceErrorPtr = GetPinnedErrorArray(errorArraySize, &hostErrorPtr);
+
+    //clear the first character which means that we don't contain an error
+    hostErrorPtr[0] = '\0';
+
+
+    dax::exec::internal::ErrorMessageBuffer errorMessage( deviceErrorPtr,
+                                                          errorArraySize);
 
     functor.SetErrorMessageBuffer(errorMessage);
 
@@ -426,13 +455,15 @@ public:
                        ::thrust::make_counting_iterator<dax::Id>(numInstances),
                        kernel);
 
-    // ::thrust::copy(errorArray.begin(), errorArray.begin()+1, hostErrorArray.begin());
-    if (hostErrorArray[0] != '\0')
-      {
-      char errorString[ERROR_ARRAY_SIZE];
-      ::thrust::copy(errorArray.begin(), errorArray.end(), errorString);
+    //sync so that we can check the results of the call.
+    //in the future this will be wrapped in a stream and that will
+    //call a callback
+    cudaDeviceSynchronize();
 
-      throw dax::cont::ErrorExecution(errorString);
+    //check what the value is
+    if (hostErrorPtr[0] != '\0')
+      {
+      throw dax::cont::ErrorExecution(hostErrorPtr);
       }
   }
 
