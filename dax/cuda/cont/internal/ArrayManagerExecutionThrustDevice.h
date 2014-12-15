@@ -45,11 +45,11 @@
 #include <dax/cuda/exec/internal/ArrayPortalFromThrust.h>
 #include <dax/cuda/exec/internal/ArrayPortalFromTexture.h>
 
-#if DAX_THRUST_MAJOR_VERSION == 1 && DAX_THRUST_MINOR_VERSION >= 7
-# ifndef DAX_USE_TEXTURE_MEM
-#  define DAX_USE_TEXTURE_MEM
-# endif
-#endif
+// #if DAX_THRUST_MAJOR_VERSION == 1 && DAX_THRUST_MINOR_VERSION >= 7
+// # ifndef DAX_USE_TEXTURE_MEM
+// #  define DAX_USE_TEXTURE_MEM
+// # endif
+// #endif
 
 namespace dax {
 namespace cuda {
